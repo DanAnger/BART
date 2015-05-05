@@ -58,6 +58,7 @@
 import sys, os, re, shutil, time, subprocess
 import argparse, ConfigParser
 import numpy as np
+import numpy.random as npr
 
 # Directory of BART.py file:
 BARTdir = os.path.dirname(os.path.realpath(__file__))
@@ -75,6 +76,8 @@ import makeP     as mp
 import InitialPT as ipt
 import makeatm   as mat
 import makecfg   as mc
+import demczs    as zs
+from BARTfunc2   import BARTclass,bart_chi,bart_constraint
 
 def main():
   """
@@ -252,9 +255,11 @@ def main():
   group.add_argument("--opacityfile", dest="opacityfile",
            help="Opacity table file [default: %(default)s]",
            type=str, action="store", default=None)
+  
 
   # Remaining_argv contains all other command-line-arguments:
   cargs, remaining_argv = cparser.parse_known_args()
+
   # Get only the arguments defined above:
   known, unknown = parser.parse_known_args(remaining_argv)
 
@@ -282,6 +287,7 @@ def main():
   # Unpack the variables from args:
   variables = dir(args)
   for var in dir(known):
+  #for var in variables:
     if not var.startswith("_"):
       exec("{:s} = args.{:s}".format(var, var))
       #print(var)
@@ -417,12 +423,35 @@ def main():
     mu.msg(1, "~~ BART End (after Transit) ~~")
     return
 
+  #This is going to be the start of the DEMC section. It will need to be
+  #modified to work with this code so that the initialization can happen
+  #properly.
+  pmax      = np.fromstring(args.pmax,sep=' ')
+  pmin      = np.fromstring(args.pmin,sep=' ')
+  numit     = float(args.numit)
+  data      = np.fromstring(args.data,sep=' ')
+  uncert    = np.fromstring(args.uncert,sep=' ')
+  params    = args.params
+  stepsize  = np.fromstring(args.stepsize,sep=' ')
+  stepsize[np.where(stepsize==0)] = 0.00000001
+  nchains   = int(args.nchains)
+  thinning  = int(args.thinning)
+  nprocess  = int(args.nprocess)
+  hist_mult = int(args.hist_mult)
+  constraint_list = [[pmin[i],pmax[i]] for i in range(len(pmin))]
+
+  #A dummy string is being used for the function delcaration, as we have
+  #hacked the demczs code to initialize a bartclass which has its own run
+  #function
+  output = zs.demczs(numit,data,np.ones(len(data)),uncert,"this is a dummpy string for a function call",bart_chi,bart_constraint,params,stepsize,constraint_list,[MCMC_cfile],nchains,thinning,nprocess,hist_mult)
+  np.save('testoutput.npy',output[3])
+
   # Run the MCMC:
-  mu.msg(1, "\nStart MCMC:")
-  MC3call = MC3dir + "/mccubed.py"
-  subprocess.call(["mpiexec {:s} -c {:s}".format(MC3call, MCMC_cfile)],
-                  shell=True, cwd=date_dir)
-  mu.msg(1, "~~ BART End ~~")
+  #mu.msg(1, "\nStart MCMC:")
+  #MC3call = MC3dir + "/mccubed.py"
+  #subprocess.call(["mpiexec {:s} -c {:s}".format(MC3call, MCMC_cfile)],
+  #                shell=True, cwd=date_dir)
+  #mu.msg(1, "~~ BART End ~~")
 
 
 if __name__ == "__main__":
