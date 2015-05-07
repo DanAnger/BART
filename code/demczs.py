@@ -151,6 +151,9 @@ class my_process(mp.Process):
         randint = np.random.randint(self.M-self.nc)
         ints    = np.random.permutation(self.M)
 	direc   = self.par_p[j] - self.zview[randint]
+	while np.sum(direc) == 0.0:
+		randint = np.random.randint(self.M-self.nc)
+		direc = self.par_p[j] - self.zview[randint]
         zp1     = np.dot(self.zview[ints[0]],direc)/\
                   np.dot(direc,direc)*\
                   direc
@@ -373,6 +376,7 @@ def demczs(iterations,data,ind,errors,function,chi_func,con_func,
                   +'m remaining')
             target += 0.05
         for n in range(num_processes):
+	    print('recive',n)
             tmp_value = qtree_there[n][1].recv()
             #print(n,len(tmp_value))
             for l in range(len(tmp_value[0])):
@@ -381,6 +385,7 @@ def demczs(iterations,data,ind,errors,function,chi_func,con_func,
                 chi_arr[M+np.sum(split[:n])+l-hist_mult*len(par)]  = tmp_value[1][l] 
         M += num_chain
         for n in range(num_processes):
+	    print("sending to",n)
             qtree_back[n][1].send(M)
         gen_counter += 1
     #now we must get the results
