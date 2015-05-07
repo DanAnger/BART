@@ -114,10 +114,14 @@ class my_process(mp.Process):
                     #print(mp.current_process(),"##########",self.par_c)
 		    con_check = self.con_func(self.par_c[j],self.const)
 		    if con_check == 0:
-                    	model = self.function(self.par_c[j],self.ind,self.ex)
+			try:
+                    		model = self.function(self.par_c[j],self.ind,self.ex)
 
-		    	self.chi_c[j]  = self.chi_func(model,self.data,\
+		    		self.chi_c[j]  = self.chi_func(model,self.data,
                                                self.errors,self.ex)
+			except:
+				print("transit failed",self.par_c[j])
+				self.chi_c[j] = 9e99
 		    else:
 			self.chi_c[j]  = con_check
                     #self.chi_c[j] += self.con_func(self.par_c[j],self.const)
